@@ -127,14 +127,7 @@ export default function Header() {
           <Link href="/faq" className="text-sm font-medium hover:text-primary">
             FAQ
           </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-medium hover:text-primary"
-          >
-            Contact
-          </Link>
         </nav>
-
         <div className="hidden md:flex items-center gap-4">
           <Button asChild variant="outline" size="sm">
             <Link href="/get-quote">Get a Quote</Link>
@@ -270,13 +263,6 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               FAQ
-            </Link>
-            <Link
-              href="/contact"
-              className="text-sm font-medium hover:text-primary"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact
             </Link>
             <div className="flex flex-col gap-2 pt-2">
               <Button asChild variant="outline" size="sm">

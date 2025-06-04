@@ -146,7 +146,7 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-medium mb-1">Our Location</h3>
                       <p className="text-sm text-muted-foreground">
-                        123 Insurance Plaza, Nairobi, Kenya
+                        Bruce House, Nairobi, Kenya
                       </p>
                     </div>
                   </CardContent>
@@ -157,7 +157,7 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-medium mb-1">Phone Number</h3>
                       <p className="text-sm text-muted-foreground">
-                        +254 700 123 456
+                        +254 797299134
                       </p>
                     </div>
                   </CardContent>
@@ -319,28 +319,6 @@ export default function ContactPage() {
       </section>
 
       {/* Map Section */}
-      <section className="w-full py-12 md:py-16 lg:py-20 bg-muted/50">
-        <div className="container px-4 md:px-6">
-          <div className="flex flex-col items-center justify-center space-y-4 text-center mb-8">
-            <div className="space-y-2">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-                Our Location
-              </h2>
-              <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Visit us at our office in Nairobi, Kenya
-              </p>
-            </div>
-          </div>
-          <div className="w-full h-[400px] rounded-xl overflow-hidden bg-muted shadow-lg">
-            {/* Replace with actual map component or iframe */}
-            <div className="w-full h-full flex items-center justify-center bg-muted">
-              <p className="text-muted-foreground">
-                Map will be displayed here
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
