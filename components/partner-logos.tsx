@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 const partners = [
   { name: "Britam", logo: "/britam.png" },
   { name: "Monarch", logo: "/monarch.png" },

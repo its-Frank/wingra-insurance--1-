@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,12 +36,19 @@ import {
   Building,
 } from "lucide-react";
 import Image from "next/image";
+import jsPDF from "jspdf";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 // Comprehensive insurance data
 const insuranceData = {
   // Motor Insurance
   "Motor Private": {
-    TOR: { monthly: 1080, twoInstallments: 2100, annual: 4100 },
     Monarch: { monthly: 900, twoInstallments: 2050, annual: 3980 },
     Trident: { monthly: 900, twoInstallments: 2050, annual: 3980 },
     Definite: { annual: 3938 },
@@ -54,13 +61,6 @@ const insuranceData = {
     CIC: { annual: 7574 },
   },
   "Motor Commercial Own Goods": {
-    TOR: {
-      "0-3 tons": { monthly: 1000, annual: 4560 },
-      "4-8 tons": { monthly: 1000, annual: 5600 },
-      "9-12 tons": { monthly: 1000, annual: 6600 },
-      "13-15 tons": { monthly: 1000, annual: 7600 },
-      "16-20 tons": { monthly: 1000, annual: 10200 },
-    },
     Monarch: {
       "0-3 tons": { annual: 4560 },
       "3.5-8 tons": { annual: 6500 },
@@ -73,20 +73,8 @@ const insuranceData = {
       "Above 15 tons": { annual: 15108 },
     },
   },
-  "Motor Commercial General Cartage": {
-    TOR: {
-      "0-3 tons": { monthly: 1000, annual: 4560 },
-      "4-8 tons": { monthly: 1000, annual: 5600 },
-      "9-12 tons": { monthly: 1000, annual: 6600 },
-      "13-15 tons": { monthly: 1000, annual: 7600 },
-      "16-20 tons": { monthly: 1000, annual: 10200 },
-    },
-  },
+  "Motor Commercial General Cartage": {},
   "PSV Uber": {
-    TOR: {
-      "up to 4 pass": { annual: 7500, pll: 500 },
-      "5-9 pass": { annual: 5500, pll: 500 },
-    },
     Monarch: { annual: 6000, pll: 500 },
     APA: {
       "up to 7 pax": { annual: 7500, pll: 500 },
@@ -96,11 +84,6 @@ const insuranceData = {
     },
   },
   "PSV Non Matatu/Taxi/Hire": {
-    TOR: {
-      "up to 4 pass": { annual: 7500, pll: 500 },
-      "5-9 pass": { annual: 5500, pll: 500 },
-      "above 9 pass": { annual: 10000, pll: 500 },
-    },
     Monarch: { annual: 6000, pll: 500 },
     APA: {
       "up to 7 pax": { annual: 7500, pll: 500 },
@@ -110,7 +93,6 @@ const insuranceData = {
     },
   },
   "Institutional Buses": {
-    TOR: { annual: 6899, pll: 455 },
     Monarch: { annual: 5500, pll: 250 },
     APA: {
       "up to 15 pax": { annual: 8000, pll: 500 },
@@ -119,11 +101,6 @@ const insuranceData = {
     },
   },
   "Tour Service Vehicles": {
-    TOR: {
-      "up to 4 pass": { annual: 7500, pll: 500 },
-      "5-9 pass": { annual: 5500, pll: 500 },
-      "above 9 pass": { annual: 10000, pll: 500 },
-    },
     Monarch: { annual: 6000, pll: 500 },
     APA: {
       "up to 7 pax": { annual: 7500, pll: 500 },
@@ -133,21 +110,17 @@ const insuranceData = {
     },
   },
   "TUK TUK PSV": {
-    TOR: { monthly: 1560, annual: 4800 },
     Monarch: { annual: 3500, pll: 500 },
     APA: { annual: 7500, pll: 500 },
   },
   "TUK TUK Commercial": {
-    TOR: { monthly: 1150, annual: 3100 },
     Monarch: { annual: 3500, pll: 500 },
     APA: { annual: 5000 },
   },
   "Motorcycle Private": {
-    TOR: { annual: 2100 },
     Monarch: { annual: 3154 },
   },
   "Motorcycle PSV": {
-    TOR: { monthly: 1600, annual: 3600 },
     Monarch: { annual: 3400, pll: 500 },
   },
   // Life Insurance
@@ -282,20 +255,19 @@ const insuranceCategories = {
 };
 
 const insurerLogos = {
-  TOR: "/placeholder.svg?height=40&width=120&text=TOR",
-  Monarch: "/placeholder.svg?height=40&width=120&text=MONARCH",
-  Trident: "/placeholder.svg?height=40&width=120&text=TRIDENT",
-  Definite: "/placeholder.svg?height=40&width=120&text=DEFINITE",
-  APA: "/placeholder.svg?height=40&width=120&text=APA",
-  Amaco: "/placeholder.svg?height=40&width=120&text=AMACO",
-  Gemini: "/placeholder.svg?height=40&width=120&text=GEMINI",
-  Pioneer: "/placeholder.svg?height=40&width=120&text=PIONEER",
-  Takaful: "/placeholder.svg?height=40&width=120&text=TAKAFUL",
-  "Old Mutual": "/placeholder.svg?height=40&width=120&text=OLD+MUTUAL",
-  CIC: "/placeholder.svg?height=40&width=120&text=CIC",
-  "CIC General": "/placeholder.svg?height=40&width=120&text=CIC+GENERAL",
-  "CIC Life": "/placeholder.svg?height=40&width=120&text=CIC+LIFE",
-  Jubilee: "/placeholder.svg?height=40&width=120&text=JUBILEE",
+  Monarch: "/monarch.png?height=40&width=120&text=MONARCH",
+  Trident: "/Trident.png?height=40&width=120&text=TRIDENT",
+  Definite: "/Definite.png?height=40&width=120&text=DEFINITE",
+  APA: "/APA.png?height=40&width=120&text=APA",
+  Amaco: "/Amaco.png?height=40&width=120&text=AMACO",
+  Gemini: "/Gemini.png?height=40&width=120&text=GEMINI",
+  Pioneer: "/Pioneer.png?height=40&width=120&text=PIONEER",
+  Takaful: "/Takaful.png?height=40&width=120&text=TAKAFUL",
+  "Old Mutual": "/OldMutual.svg?height=40&width=120&text=OLD+MUTUAL",
+  CIC: "/CIC.png?height=40&width=120&text=CIC",
+  "CIC General": "/CIC.png?height=40&width=120&text=CIC+GENERAL",
+  "CIC Life": "/CIC.png?height=40&width=120&text=CIC+LIFE",
+  Jubilee: "/Jubilee.png?height=40&width=120&text=JUBILEE",
 };
 
 const categoryIcons = {
@@ -306,6 +278,25 @@ const categoryIcons = {
   "Personal Insurance": Shield,
   "Business Insurance": Building,
 };
+
+interface QuoteData {
+  name: string;
+  phone: string;
+  email: string;
+  insuranceCategory: string;
+  insuranceType: string;
+  vehicleRegistration: string;
+  vehicleType: string;
+  tonnage: string;
+  passengers: string;
+  propertyValue: string;
+  propertyType: string;
+  travelDestination: string;
+  travelDuration: string;
+  coverageAmount: string;
+  additionalInfo: string;
+  selectedQuote?: any;
+}
 
 type Step =
   | "welcome"
@@ -319,27 +310,7 @@ type Step =
   | "coverage-amount"
   | "additional-info"
   | "quotes"
-  | "selection"
   | "proforma";
-
-interface QuoteData {
-  name: string;
-  phone: string;
-  email: string;
-  insuranceCategory: string;
-  insuranceType: string;
-  vehicleRegistration?: string;
-  vehicleType?: string;
-  tonnage?: string;
-  passengers?: string;
-  propertyValue?: string;
-  propertyType?: string;
-  travelDestination?: string;
-  travelDuration?: string;
-  coverageAmount?: string;
-  additionalInfo?: string;
-  selectedQuote?: any;
-}
 
 export default function GetQuotePage() {
   const [currentStep, setCurrentStep] = useState<Step>("welcome");
@@ -349,6 +320,16 @@ export default function GetQuotePage() {
     email: "",
     insuranceCategory: "",
     insuranceType: "",
+    vehicleRegistration: "",
+    vehicleType: "",
+    tonnage: "",
+    passengers: "",
+    propertyValue: "",
+    propertyType: "",
+    travelDestination: "",
+    travelDuration: "",
+    coverageAmount: "",
+    additionalInfo: "",
   });
   const [quotes, setQuotes] = useState<any[]>([]);
   const [chatHistory, setChatHistory] = useState<
@@ -360,6 +341,9 @@ export default function GetQuotePage() {
         "Hello! 👋 Welcome to Wingra Insurance. I'm here to help you get the best insurance quotes. What's your name?",
     },
   ]);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [selectedQuoteDetails, setSelectedQuoteDetails] = useState<any>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   const addToChatHistory = (
     type: "bot" | "user" | "quote",
@@ -368,6 +352,14 @@ export default function GetQuotePage() {
   ) => {
     setChatHistory((prev) => [...prev, { type, message, data }]);
   };
+
+  // Auto-scroll chat history
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
 
   const calculatePremiumWithLevies = (basePremium: number) => {
     const levies = basePremium * 0.0045; // 0.45%
@@ -378,6 +370,55 @@ export default function GetQuotePage() {
       stampDuty,
       total: Math.round(basePremium + levies + stampDuty),
     };
+  };
+
+  const getQuoteDetails = (insurer: string, insuranceType: string) => {
+    const typeData = insuranceData[insuranceType as keyof typeof insuranceData];
+    if (!typeData || !typeData[insurer as keyof typeof typeData]) return null;
+
+    const insurerData = typeData[insurer as keyof typeof typeData];
+    const details: { monthly?: any; twoInstallments?: any; annual?: any } = {};
+
+    // Handle sub-categories (e.g., travel destinations, life insurance products)
+    if (
+      insuranceType === "Travel Insurance" ||
+      insuranceType === "Life Insurance"
+    ) {
+      const subType =
+        quoteData.travelDestination || quoteData.insuranceType.split(" - ")[0];
+      const subData = insurerData[subType as keyof typeof insurerData];
+      if (subData) {
+        if ("monthly" in subData) {
+          details.monthly = calculatePremiumWithLevies(subData.monthly);
+        }
+        if ("twoInstallments" in subData) {
+          details.twoInstallments = calculatePremiumWithLevies(
+            subData.twoInstallments
+          );
+        }
+        if ("annual" in subData) {
+          details.annual = calculatePremiumWithLevies(subData.annual);
+        }
+        if ("single" in subData) {
+          details.monthly = calculatePremiumWithLevies(subData.single);
+        }
+      }
+    } else {
+      // Handle regular insurance types
+      if ("monthly" in insurerData) {
+        details.monthly = calculatePremiumWithLevies(insurerData.monthly);
+      }
+      if ("twoInstallments" in insurerData) {
+        details.twoInstallments = calculatePremiumWithLevies(
+          insurerData.twoInstallments
+        );
+      }
+      if ("annual" in insurerData) {
+        details.annual = calculatePremiumWithLevies(insurerData.annual);
+      }
+    }
+
+    return details;
   };
 
   const generateQuotes = () => {
@@ -654,8 +695,160 @@ export default function GetQuotePage() {
 
     addToChatHistory(
       "bot",
-      "Click on any quote above to select it, or I can email all quotes to you. Which would you prefer? 📧"
+      "Click on any quote above to see detailed pricing options or select it to proceed."
     );
+  };
+
+  const sendQuoteToEmail = () => {
+    addToChatHistory(
+      "bot",
+      `📧 Perfect! I've sent all ${quotes.length} quotes to ${quoteData.email}. You can review them at your convenience and get back to us when you're ready to proceed.`
+    );
+  };
+
+  const downloadProformaPDF = () => {
+    const quote = quoteData.selectedQuote;
+    const today = new Date();
+    const coverFrom = today.toLocaleDateString();
+    const coverTo = new Date(
+      today.getFullYear() + 1,
+      today.getMonth(),
+      today.getDate()
+    ).toLocaleDateString();
+    const quoteNumber = `WI-${Date.now().toString().slice(-6)}`;
+
+    // Create new PDF document
+    const pdf = new jsPDF();
+
+    // Set font
+    pdf.setFont("helvetica");
+
+    // Header
+    pdf.setFontSize(20);
+    pdf.setTextColor(0, 100, 200);
+    pdf.text("WINGRA INSURANCE AGENCY", 20, 30);
+
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text("123 Insurance Plaza", 20, 40);
+    pdf.text("Nairobi, Kenya", 20, 47);
+    pdf.text("Email: info@wingra.co.ke", 20, 54);
+    pdf.text("Phone: +254 700 123 456", 20, 61);
+
+    // Quote details (right side)
+    pdf.text(`Date: ${today.toLocaleDateString()}`, 140, 40);
+    pdf.text(`Quote #: ${quoteNumber}`, 140, 47);
+    pdf.text(`Insurer: ${quote.insurer}`, 140, 54);
+
+    // Title
+    pdf.setFontSize(16);
+    pdf.setTextColor(0, 100, 200);
+    pdf.text("PROFORMA DEBIT NOTE", 20, 80);
+
+    // Client Details
+    pdf.setFontSize(12);
+    pdf.setTextColor(0, 0, 0);
+    pdf.text("CLIENT DETAILS:", 20, 95);
+    pdf.text(`Name: ${quoteData.name}`, 20, 105);
+    pdf.text(`Phone: ${quoteData.phone}`, 20, 112);
+    pdf.text(`Email: ${quoteData.email}`, 20, 119);
+    if (quoteData.vehicleRegistration) {
+      pdf.text(
+        `Vehicle Registration: ${quoteData.vehicleRegistration}`,
+        20,
+        126
+      );
+    }
+
+    // Insurance Details
+    pdf.text("INSURANCE DETAILS:", 20, 140);
+    pdf.text(`Insurance Type: ${quoteData.insuranceType}`, 20, 150);
+    pdf.text(`Product: ${quote.type}`, 20, 157);
+    pdf.text(`Cover Period: ${coverFrom} to ${coverTo}`, 20, 164);
+
+    // Premium Breakdown
+    pdf.text("PREMIUM BREAKDOWN:", 20, 180);
+
+    let yPos = 190;
+    pdf.text(`Base Premium:`, 20, yPos);
+    pdf.text(`KSh ${quote.basePremium.toLocaleString()}`, 140, yPos);
+
+    yPos += 7;
+    pdf.text(`Levies (0.45%):`, 20, yPos);
+    pdf.text(`KSh ${quote.levies.toLocaleString()}`, 140, yPos);
+
+    yPos += 7;
+    pdf.text(`Stamp Duty:`, 20, yPos);
+    pdf.text(`KSh ${quote.stampDuty}`, 140, yPos);
+
+    if (quote.pll > 0) {
+      yPos += 7;
+      pdf.text(`PLL:`, 20, yPos);
+      pdf.text(`KSh ${quote.pll}`, 140, yPos);
+    }
+
+    // Total
+    yPos += 15;
+    pdf.setFontSize(14);
+    pdf.setFont("helvetica", "bold");
+    pdf.text(`TOTAL AMOUNT:`, 20, yPos);
+    pdf.text(`KSh ${quote.total.toLocaleString()}`, 140, yPos);
+
+    // Payment Instructions
+    pdf.setFontSize(12);
+    pdf.setFont("helvetica", "normal");
+    yPos += 20;
+    pdf.text("PAYMENT INSTRUCTIONS:", 20, yPos);
+    yPos += 10;
+    pdf.text("Bank: KCB Bank", 20, yPos);
+    yPos += 7;
+    pdf.text("Account Name: Wingra Insurance Agency", 20, yPos);
+    yPos += 7;
+    pdf.text("Account Number: 1234567890", 20, yPos);
+    yPos += 7;
+    pdf.text(
+      `Reference: ${quoteData.vehicleRegistration || quoteData.name}`,
+      20,
+      yPos
+    );
+    // Footer
+    yPos += 20;
+    pdf.setFontSize(10);
+    pdf.setTextColor(100, 100, 100);
+    pdf.text("Regulated by Insurance Regulatory Authority (IRA)", 20, yPos);
+    // Save the PDF
+    pdf.save(`Wingra_Insurance_Quote_${quoteNumber}.pdf`);
+  };
+
+  const sendClientDataToOwner = async (
+    clientData: QuoteData,
+    selectedQuote: any
+  ) => {
+    try {
+      const response = await fetch("/api/notify-owner", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          clientData,
+          selectedQuote,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Owner notification sent successfully");
+      }
+    } catch (error) {
+      console.error("Failed to send owner notification:", error);
+    }
+  };
+
+  const handleQuoteClick = (quote: any) => {
+    const details = getQuoteDetails(quote.insurer, quoteData.insuranceType);
+    setSelectedQuoteDetails({ ...quote, details });
+    setShowQuoteModal(true);
   };
 
   const handleQuoteSelection = (quote: any) => {
@@ -667,14 +860,12 @@ export default function GetQuotePage() {
         quote.type
       } for KSh ${quote.total.toLocaleString()}. Let me prepare your proforma invoice...`
     );
-    setCurrentStep("proforma");
-  };
 
-  const sendQuoteToEmail = () => {
-    addToChatHistory(
-      "bot",
-      `📧 Perfect! I've sent all ${quotes.length} quotes to ${quoteData.email}. You can review them at your convenience and get back to us when you're ready to proceed.`
-    );
+    // Send notification to owner
+    sendClientDataToOwner(quoteData, quote);
+
+    setShowQuoteModal(false);
+    setCurrentStep("proforma");
   };
 
   const renderCurrentStep = () => {
@@ -1050,18 +1241,14 @@ export default function GetQuotePage() {
               <h3 className="text-lg font-semibold">Quote Actions</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Button variant="outline" onClick={sendQuoteToEmail}>
-                <Mail className="h-4 w-4 mr-2" />
-                Email All Quotes
-              </Button>
               <Button variant="outline" onClick={() => window.print()}>
                 <Download className="h-4 w-4 mr-2" />
                 Print Quotes
               </Button>
             </div>
             <div className="text-sm text-muted-foreground">
-              Click on any quote in the chat above to select it and proceed with
-              that insurer.
+              Click on any quote in the chat above to see detailed pricing or
+              select it to proceed.
             </div>
           </div>
         );
@@ -1082,7 +1269,7 @@ export default function GetQuotePage() {
               <h3 className="text-xl font-semibold">
                 Proforma Invoice Ready! 🎉
               </h3>
-              <Button>
+              <Button onClick={downloadProformaPDF}>
                 <Download className="h-4 w-4 mr-2" />
                 Download PDF
               </Button>
@@ -1093,17 +1280,17 @@ export default function GetQuotePage() {
                 <div className="flex justify-between items-start mb-8">
                   <div>
                     <Image
-                      src="/placeholder.svg?height=60&width=200&text=WINGRA+INSURANCE"
+                      src="/logo.jpg?height=60&width=200&text=WINGRA+INSURANCE"
                       alt="Wingra Insurance"
                       width={200}
                       height={60}
                       className="mb-4"
                     />
                     <div className="text-sm">
-                      <p>123 Insurance Plaza</p>
+                      <p>Bruce House </p>
                       <p>Nairobi, Kenya</p>
                       <p>Email: info@wingra.co.ke</p>
-                      <p>Phone: +254 700 123 456</p>
+                      <p>Phone: +254 797299134</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -1197,13 +1384,13 @@ export default function GetQuotePage() {
                   <h4 className="font-semibold mb-2">Payment Instructions</h4>
                   <div className="text-sm">
                     <p>
-                      <strong>Bank:</strong> KCB Bank
+                      <strong>Bank:</strong> I&M Bank
                     </p>
                     <p>
-                      <strong>Account Name:</strong> Wingra Insurance Agency
+                      <strong>Account Name:</strong> Wingra Insurance Agency Ltd
                     </p>
                     <p>
-                      <strong>Account Number:</strong> 1234567890
+                      <strong>Account Number:</strong> 02006107316350
                     </p>
                     <p>
                       <strong>Reference:</strong>{" "}
@@ -1233,6 +1420,210 @@ export default function GetQuotePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      {/* Quote Details Modal */}
+      <Dialog open={showQuoteModal} onOpenChange={setShowQuoteModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Quote Details - {selectedQuoteDetails?.insurer}
+            </DialogTitle>
+            <DialogDescription>
+              Below are the available pricing options for this insurance quote.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {selectedQuoteDetails?.details?.monthly && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Monthly Plan</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Base Premium:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.monthly.basePremium.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Levies (0.45%):</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.monthly.levies.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Stamp Duty:</span>
+                      <span>
+                        KSh {selectedQuoteDetails.details.monthly.stampDuty}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Total:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.monthly.total.toLocaleString()}
+                      </span>
+                    </div>
+                    {selectedQuoteDetails.pll > 0 && (
+                      <div className="flex justify-between">
+                        <span>PLL:</span>
+                        <span>KSh {selectedQuoteDetails.pll}</span>
+                      </div>
+                    )}
+                    <Button
+                      className="w-full mt-4"
+                      onClick={() =>
+                        handleQuoteSelection({
+                          ...selectedQuoteDetails,
+                          type: "Monthly",
+                          basePremium:
+                            selectedQuoteDetails.details.monthly.basePremium,
+                          levies: selectedQuoteDetails.details.monthly.levies,
+                          stampDuty:
+                            selectedQuoteDetails.details.monthly.stampDuty,
+                          total: selectedQuoteDetails.details.monthly.total,
+                        })
+                      }
+                    >
+                      Select Monthly Plan
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {selectedQuoteDetails?.details?.twoInstallments && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Two Installments Plan</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Base Premium:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.twoInstallments.basePremium.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Levies (0.45%):</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.twoInstallments.levies.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Stamp Duty:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.twoInstallments.stampDuty}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Total:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.twoInstallments.total.toLocaleString()}
+                      </span>
+                    </div>
+                    {selectedQuoteDetails.pll > 0 && (
+                      <div className="flex justify-between">
+                        <span>PLL:</span>
+                        <span>KSh {selectedQuoteDetails.pll}</span>
+                      </div>
+                    )}
+                    <Button
+                      className="w-full mt-4"
+                      onClick={() =>
+                        handleQuoteSelection({
+                          ...selectedQuoteDetails,
+                          type: "Two Installments",
+                          basePremium:
+                            selectedQuoteDetails.details.twoInstallments
+                              .basePremium,
+                          levies:
+                            selectedQuoteDetails.details.twoInstallments.levies,
+                          stampDuty:
+                            selectedQuoteDetails.details.twoInstallments
+                              .stampDuty,
+                          total:
+                            selectedQuoteDetails.details.twoInstallments.total,
+                        })
+                      }
+                    >
+                      Select Two Installments Plan
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {selectedQuoteDetails?.details?.annual && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Annual Plan</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Base Premium:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.annual.basePremium.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Levies (0.45%):</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.annual.levies.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Stamp Duty:</span>
+                      <span>
+                        KSh {selectedQuoteDetails.details.annual.stampDuty}
+                      </span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span>Total:</span>
+                      <span>
+                        KSh{" "}
+                        {selectedQuoteDetails.details.annual.total.toLocaleString()}
+                      </span>
+                    </div>
+                    {selectedQuoteDetails.pll > 0 && (
+                      <div className="flex justify-between">
+                        <span>PLL:</span>
+                        <span>KSh {selectedQuoteDetails.pll}</span>
+                      </div>
+                    )}
+                    <Button
+                      className="w-full mt-4"
+                      onClick={() =>
+                        handleQuoteSelection({
+                          ...selectedQuoteDetails,
+                          type: "Annual",
+                          basePremium:
+                            selectedQuoteDetails.details.annual.basePremium,
+                          levies: selectedQuoteDetails.details.annual.levies,
+                          stampDuty:
+                            selectedQuoteDetails.details.annual.stampDuty,
+                          total: selectedQuoteDetails.details.annual.total,
+                        })
+                      }
+                    >
+                      Select Annual Plan
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Hero Section */}
       <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
         <div className="container px-4 md:px-6">
@@ -1269,7 +1660,10 @@ export default function GetQuotePage() {
                       "Your insurance quote is ready"}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="max-h-96 overflow-y-auto space-y-3">
+                <CardContent
+                  className="max-h-96 overflow-y-auto space-y-3"
+                  ref={chatContainerRef}
+                >
                   {chatHistory.map((chat, index) => (
                     <div
                       key={index}
@@ -1287,7 +1681,7 @@ export default function GetQuotePage() {
                         }`}
                         onClick={
                           chat.type === "quote" && chat.data
-                            ? () => handleQuoteSelection(chat.data)
+                            ? () => handleQuoteClick(chat.data)
                             : undefined
                         }
                       >
@@ -1308,7 +1702,7 @@ export default function GetQuotePage() {
                               className="object-contain"
                             />
                             <Badge variant="secondary" className="text-xs">
-                              Click to Select
+                              Click to View Details
                             </Badge>
                           </div>
                         )}
